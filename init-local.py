@@ -107,6 +107,49 @@ def parse_profile(env_path: Path) -> str:
 def generate_random_encryption_key() -> str:
     return secrets.token_hex(32)
 
+def build_custom_quadratic_api():
+    # Paths
+    custom_dir = Path("custom")
+    dockerfile_path = custom_dir / "Dockerfile"
+    compose_path = REPO_DIR / "docker-compose.yml"
+    backup_path = compose_path.with_suffix(".yml.bak")
+
+    # 1) Validate paths
+    if not custom_dir.is_dir():
+        raise FileNotFoundError("The directory 'custom/' does not exist.")
+
+    if not dockerfile_path.is_file():
+        raise FileNotFoundError("custom/Dockerfile does not exist.")
+
+    print(f"[+] Using Dockerfile at: {dockerfile_path}")
+
+    # 2) Build Docker image
+    print("[+] Building Docker image 'my-quadratic-api'...")
+    subprocess.check_call(["docker", "build", "-t", "my-quadratic-api", str(custom_dir)])
+
+    # 3) Update docker-compose.yml
+    if not compose_path.is_file():
+        raise FileNotFoundError("docker-compose.yml not found in current directory.")
+
+    original = compose_path.read_text(encoding="utf-8")
+
+    old_line = "image: ${ECR_URL}/quadratic-api:${IMAGE_TAG}"
+    new_line = "image: my-quadratic-api"
+
+    if old_line not in original:
+        print("[!] WARNING: Expected image line not found in docker-compose.yml.")
+        return
+
+    updated = original.replace(old_line, new_line)
+
+    # Backup
+    backup_path.write_text(original, encoding="utf-8")
+
+    # Write updated version
+    compose_path.write_text(updated, encoding="utf-8")
+
+    print(f"[+] docker-compose.yml updated (backup saved as {backup_path})")
+    print("[✓] Done!")
 
 def main():
     parser = argparse.ArgumentParser(
@@ -193,8 +236,12 @@ def main():
     else:
         print(f"WARNING: {init_sh} not found; skipping chmod.")
 
-    # 9) Call start.py instead of sh start.sh
-    start_py = Path("../start.py")
+    # 9) Build custom api
+    os.chdir(BASE_DIR)
+    build_custom_quadratic_api()
+
+    # 10) Call start.py instead of sh start.sh
+    start_py = Path("start.py")
     if start_py.exists():
         print("Running start.py...")
         subprocess.run([sys.executable, str(start_py)], check=True)
