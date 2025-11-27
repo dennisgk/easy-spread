@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 import secrets
+import urllib.request
 
 REPO = "https://github.com/quadratichq/quadratic-selfhost.git"
 SELF_HOSTING_URI = "https://selfhost.quadratichq.com/"
@@ -23,6 +24,11 @@ UUID_REGEX = re.compile(
     r"[0-9a-fA-F]{12}$"
 )
 
+def download_env_local():
+    url = "https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/refs/heads/main/.env.local"
+    print("Downloading .env.local from GitHub...")
+    urllib.request.urlretrieve(url, ".env.local")
+    print("Saved .env.local")
 
 def get_license_key_interactive() -> str:
     prompt = (
@@ -140,6 +146,8 @@ def main():
         print(f"Copied {kratos_local} -> {kratos_target}")
     else:
         print(f"WARNING: {kratos_local} does not exist.")
+
+    download_env_local()
 
     env_local = Path(".env.local")
     env_file = Path(".env")
