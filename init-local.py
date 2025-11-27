@@ -189,7 +189,7 @@ def main():
 
     # 2) Retrieve code from GitHub
     checkout_repo()  # cwd is now REPO_DIR
-    normalize_line_endings()
+    normalize_line_endings(REPO_DIR)
 
     # 3) Copy local config files
     kratos_local = Path("docker/ory-auth/config/kratos.local.yml")
