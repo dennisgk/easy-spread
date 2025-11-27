@@ -194,7 +194,7 @@ def main():
         print(f"WARNING: {init_sh} not found; skipping chmod.")
 
     # 9) Call start.py instead of sh start.sh
-    start_py = Path("start.py")
+    start_py = Path("../start.py")
     if start_py.exists():
         print("Running start.py...")
         subprocess.run([sys.executable, str(start_py)], check=True)
