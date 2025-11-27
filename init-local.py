@@ -24,12 +24,6 @@ UUID_REGEX = re.compile(
     r"[0-9a-fA-F]{12}$"
 )
 
-def download_env_local():
-    url = "https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/refs/heads/main/.env.local"
-    print("Downloading .env.local from GitHub...")
-    urllib.request.urlretrieve(url, ".env.local")
-    print("Saved .env.local")
-
 def get_license_key_interactive() -> str:
     prompt = (
         f"Enter your license key "
@@ -42,17 +36,27 @@ def get_license_key_interactive() -> str:
     print(INVALID_LICENSE_KEY)
     sys.exit(1)
 
-
 def checkout_repo():
     if not REPO_DIR.exists():
-        print(f"Cloning {REPO} into {REPO_DIR}...")
-        subprocess.run(["git", "clone", REPO], check=True, cwd=BASE_DIR)
+        print(f"Cloning {REPO} into {REPO_DIR} (sparse checkout: docker/ only)...")
+        # clone without checking out files
+        subprocess.run(
+            ["git", "clone", "--no-checkout", REPO, str(REPO_DIR)],
+            check=True,
+            cwd=BASE_DIR,
+        )
+        os.chdir(REPO_DIR)
+        # enable sparse checkout and select only what we need
+        subprocess.run(["git", "sparse-checkout", "init", "--cone"], check=True)
+        subprocess.run(["git", "sparse-checkout", "set", "docker"], check=True)
+        subprocess.run(["git", "checkout"], check=True)
     else:
-        print(f"Repository directory already exists at {REPO_DIR}, skipping clone.")
-
-    os.chdir(REPO_DIR)
-    subprocess.run(["git", "checkout"], check=True)
-
+        print(f"Repository directory already exists at {REPO_DIR}, updating sparse checkout.")
+        os.chdir(REPO_DIR)
+        # ensure sparse checkout still targets only docker/
+        subprocess.run(["git", "sparse-checkout", "init", "--cone"], check=True)
+        subprocess.run(["git", "sparse-checkout", "set", "docker"], check=True)
+        subprocess.run(["git", "pull", "--ff-only"], check=True)
 
 def load_env_file(env_path: Path) -> dict:
     env = {}
@@ -118,46 +122,10 @@ def generate_random_encryption_key() -> str:
 
 def build_custom_quadratic_api():
     # Paths
-    custom_dir = Path("custom")
-    dockerfile_path = custom_dir / "Dockerfile"
-    compose_path = REPO_DIR / "docker-compose.yml"
-    backup_path = compose_path.with_suffix(".yml.bak")
-
-    # 1) Validate paths
-    if not custom_dir.is_dir():
-        raise FileNotFoundError("The directory 'custom/' does not exist.")
-
-    if not dockerfile_path.is_file():
-        raise FileNotFoundError("custom/Dockerfile does not exist.")
-
-    print(f"[+] Using Dockerfile at: {dockerfile_path}")
-
+    custom_dir = Path("custom-api")
     # 2) Build Docker image
     print("[+] Building Docker image 'my-quadratic-api'...")
     subprocess.check_call(["docker", "build", "-t", "my-quadratic-api", str(custom_dir)])
-
-    # 3) Update docker-compose.yml
-    if not compose_path.is_file():
-        raise FileNotFoundError("docker-compose.yml not found in current directory.")
-
-    original = compose_path.read_text(encoding="utf-8")
-
-    old_line = "image: ${ECR_URL}/quadratic-api:${IMAGE_TAG}"
-    new_line = "image: my-quadratic-api"
-
-    if old_line not in original:
-        print("[!] WARNING: Expected image line not found in docker-compose.yml.")
-        return
-
-    updated = original.replace(old_line, new_line)
-
-    # Backup
-    backup_path.write_text(original, encoding="utf-8")
-
-    # Write updated version
-    compose_path.write_text(updated, encoding="utf-8")
-
-    print(f"[+] docker-compose.yml updated (backup saved as {backup_path})")
     print("[✓] Done!")
 
 def main():
@@ -200,9 +168,14 @@ def main():
     else:
         print(f"WARNING: {kratos_local} does not exist.")
 
-    download_env_local()
-
+    env_local_orig = BASE_DIR / "custom-compose" / ".env.local"
     env_local = Path(".env.local")
+    if env_local_orig.exists():
+        env_local.write_text(env_local_orig.read_text())
+        print(f"Copied {env_local_orig} -> {env_local}")
+    else:
+        print(f"WARNING: {env_local_orig} does not exist.")
+
     env_file = Path(".env")
     if env_local.exists():
         env_file.write_text(env_local.read_text())
@@ -249,6 +222,13 @@ def main():
     # 9) Build custom api
     os.chdir(BASE_DIR)
     build_custom_quadratic_api()
+    docker_compose_orig = BASE_DIR / "custom-compose" / "docker-compose.yml"
+    docker_compose = REPO_DIR / "docker-compose.yml"
+    if docker_compose_orig.exists():
+        docker_compose.write_text(docker_compose_orig.read_text())
+        print(f"Copied {docker_compose_orig} -> {docker_compose}")
+    else:
+        print(f"WARNING: {docker_compose_orig} does not exist.")
 
     # 10) Call start.py instead of sh start.sh
     os.chdir(REPO_DIR)
