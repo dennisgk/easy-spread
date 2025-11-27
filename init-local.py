@@ -241,12 +241,14 @@ def main():
     build_custom_quadratic_api()
 
     # 10) Call start.py instead of sh start.sh
-    start_py = Path("start.py")
+    os.chdir(REPO_DIR)
+    start_py = Path("../start.py")
     if start_py.exists():
         print("Running start.py...")
         subprocess.run([sys.executable, str(start_py)], check=True)
     else:
         print("WARNING: start.py not found; not starting services.")
+    os.chdir(BASE_DIR)
 
 
 if __name__ == "__main__":
