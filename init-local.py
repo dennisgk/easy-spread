@@ -160,7 +160,7 @@ def main():
     normalize_line_endings(REPO_DIR)
 
     # 3) Copy local config files
-    kratos_local = Path("docker/ory-auth/config/kratos.local.yml")
+    kratos_local = BASE_DIR / "custom-compose" / "kratos.yml"
     kratos_target = Path("docker/ory-auth/config/kratos.yml")
     if kratos_local.exists():
         kratos_target.write_text(kratos_local.read_text())
