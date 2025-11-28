@@ -42,7 +42,7 @@ services:
 
   quadratic-client:
     platform: linux/amd64
-    image: ${ECR_URL}/quadratic-client:${IMAGE_TAG}
+    image: my-quadratic-client
     container_name: client
     environment:
       VITE_DEBUG: 1

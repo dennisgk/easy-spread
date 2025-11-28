@@ -128,6 +128,14 @@ def build_custom_quadratic_api():
     subprocess.check_call(["docker", "build", "-t", "my-quadratic-api", str(custom_dir)])
     print("[✓] Done!")
 
+def build_custom_quadratic_client():
+    # Paths
+    custom_dir = Path("custom-client")
+    # 2) Build Docker image
+    print("[+] Building Docker image 'my-quadratic-client'...")
+    subprocess.check_call(["docker", "build", "-t", "my-quadratic-client", str(custom_dir)])
+    print("[✓] Done!")
+
 def main():
     parser = argparse.ArgumentParser(
         description="Self-hosting initialization for Quadratic (Python version)"
@@ -222,6 +230,7 @@ def main():
     # 9) Build custom api
     os.chdir(BASE_DIR)
     build_custom_quadratic_api()
+    build_custom_quadratic_client()
     docker_compose_orig = BASE_DIR / "custom-compose" / "docker-compose.yml"
     docker_compose = REPO_DIR / "docker-compose.yml"
     if docker_compose_orig.exists():
