@@ -33,10 +33,6 @@ RUN npm run build
 # ----------------------------------
 FROM public.ecr.aws/z7e3d4w1/quadratic-client:latest
 
-# Copy your custom wheel
-COPY ./quadratic_py-0.1.0-py3-none-any.whl \
-    /usr/share/nginx/html/quadratic_py-0.1.0-py3-none-any.whl
-
 # Copy the newly built wheels from the builder
 # This overwrites any wheel with same filename
 COPY --from=builder /quadratic/quadratic-kernels/python-wasm/dist/*.whl \
