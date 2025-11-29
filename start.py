@@ -101,7 +101,7 @@ def main():
 
     # 6) docker builder prune -af
     print("Pruning Docker builder cache (docker builder prune -af)...")
-    subprocess.run(["docker", "builder", "prune", "-af"], check=False)
+    # subprocess.run(["docker", "builder", "prune", "-af"], check=False)
 
     print("Done.")
 

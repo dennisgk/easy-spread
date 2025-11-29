@@ -118,6 +118,15 @@ def normalize_line_endings(repo_dir: Path) -> None:
                 print(f"Normalized line endings to LF in {path}")
 
 def generate_random_encryption_key() -> str:
+    enc = Path("ENCRYPTION_KEY")
+    if enc.exists():
+        text = enc.read_text()
+            
+        if text.endswith('\n'):
+            text = text[:-1]
+        
+        return text
+    
     return secrets.token_hex(32)
 
 def build_custom_quadratic_api():

@@ -47,7 +47,7 @@ async def run_python(code: str, pos: Tuple[int, int]):
     globals['q'] = q(pos)
 
     try:
-        await mpl_patch.apply_custom_patch()
+        await custom_patch.apply_custom_patch()
         await mpl_patch.apply_mpl_patch(code)
         plotly_html = await plotly_patch.intercept_plotly_html(code)
 
